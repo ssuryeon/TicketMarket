@@ -1,5 +1,7 @@
 import styled from 'styled-components';
 import type { RouteKey } from '../types';
+import { useState } from 'react';
+import { logIn } from '../utils/auth';
 
 interface NavItem {
   key: RouteKey;
@@ -20,6 +22,8 @@ interface NavbarProps {
 }
 
 export function Navbar({ active, onNavigate, authed = false }: NavbarProps) {
+  const [isClicked, setIsClicked] = useState(false);
+
   return (
     <Bar>
       <Inner>
@@ -45,8 +49,8 @@ export function Navbar({ active, onNavigate, authed = false }: NavbarProps) {
             <PrimaryPill type="button">로그아웃</PrimaryPill>
           ) : (
             <>
-              <PrimaryPill type="button">회원가입</PrimaryPill>
-              <GhostText type="button">로그인</GhostText>
+              <PrimaryPill type="button" onClick={() => onNavigate('signup')}>회원가입</PrimaryPill>
+              <GhostText type="button" onClick={() => setIsClicked(true)}>로그인</GhostText>
             </>
           )}
         </Auth>

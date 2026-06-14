@@ -9,6 +9,7 @@ import { SeatSelectScreen } from './screens/SeatSelectScreen';
 import { MarketScreen } from './screens/MarketScreen';
 import { MyTicketsScreen } from './screens/MyTicketsScreen';
 import { ListTicketScreen } from './screens/ListTicketScreen';
+import { SignUpScreen } from './screens/SignUpScreen';
 import type { RouteKey } from './types';
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
       {route === 'market' && <MarketScreen />}
       {route === 'tickets' && <MyTicketsScreen />}
       {route === 'register' && <ListTicketScreen />}
+      {route === 'signup' && <SignUpScreen />}
     </ThemeProvider>
   );
 }
