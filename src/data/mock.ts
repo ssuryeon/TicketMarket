@@ -92,7 +92,7 @@ export const ownedTickets: OwnedTicket[] = [
   { id: 't3', title: '블랙핑크 · Born Pink World', seat: 'B구역 · 3열', date: 'Sep 5, 2025', tokenId: '토큰 #0289', status: '예정', value: '0.68 ETH' },
 ];
 
-export const ticketTabs = ['내 티켓', '활동 내역', '관심 목록'];
+export const ticketTabs = ['내 티켓', '정산 계좌', '활동 내역', '관심 목록'];
 
 export const sellListings: SellListing[] = Array.from({ length: 9 }, (_, i) => ({
   id: `sell-${i + 1}`,

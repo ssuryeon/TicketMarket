@@ -1,17 +1,47 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import { Navbar } from '../components/Navbar';
 import { Badge, Button, Card, Page, PageSubtitle, PageTitle } from '../components/ui';
 import { marketFilters, marketListings } from '../data/mock';
+import { getMarketList } from '../utils/market';
+import { userStore } from '../stores/userStore';
+import { Navigate, useNavigate } from 'react-router-dom';
+
+interface ISaleTicket {
+  id: string;
+  price: string;
+  original_price: string;
+  token_id: number;
+  event_name: string;
+  venue: string;
+  event_date: string;
+  seat_number: string;
+  seller_nickname: string;
+  created_at: string;
+}
 
 export function MarketScreen() {
   const [activeFilter, setActiveFilter] = useState('all');
+  const [marketTicket, setMarketTicket] = useState<ISaleTicket[]>([]);
+  const token = userStore((state) => state.token);
+  const navigate = useNavigate();
+  useEffect(() => {
+    const getTickets = async () => {
+      const res = await getMarketList(token);
+      console.log(res);
+      setMarketTicket(res);
+    }
+    getTickets();
+  }, [])
 
   return (
-    <Page>
+    <>
+      <Navbar />
+      <Page>
       <PageTitle>양도 마켓</PageTitle>
       <PageSubtitle>온체인으로 보호되는 P2P 티켓 양도. 모든 매물은 지갑 인증을 거쳤습니다.</PageSubtitle>
 
-      <Filters>
+      <Filters style={{position: 'relative'}}>
         {marketFilters.map((f) => (
           <FilterPill
             key={f.id}
@@ -22,27 +52,29 @@ export function MarketScreen() {
             {f.label}
           </FilterPill>
         ))}
+        <Button style={{position: 'absolute', right: 0, height: 36}} onClick={() => navigate('/register')}>양도 등록</Button>
       </Filters>
 
       <Grid>
-        {marketListings.map((listing) => (
+        {marketTicket.map((listing) => (
           <Listing key={listing.id}>
             <CardHead>
-              <ListingTitle>{listing.title}</ListingTitle>
-              {listing.verified && <Badge $tone="green">인증됨</Badge>}
+              <ListingTitle>{listing.event_name}</ListingTitle>
+              {/* {listing.verified && <Badge $tone="green">인증됨</Badge>} */}
             </CardHead>
-            <Meta>{listing.meta}</Meta>
+            <Meta>{listing.seat_number} · {listing.event_date.split("T")[0]}</Meta>
             <Line />
             <AskLabel>판매 희망가</AskLabel>
             <AskRow>
-              <Ask>{listing.ask}</Ask>
+              <Ask>{listing.price}</Ask>
               <BuyBtn $variant="primary">바로 구매</BuyBtn>
             </AskRow>
-            <Original>{listing.original}</Original>
+            <Original>{listing.original_price}</Original>
           </Listing>
         ))}
       </Grid>
     </Page>
+    </>
   );
 }
 

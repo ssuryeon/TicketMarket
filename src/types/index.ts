@@ -1,13 +1,3 @@
-export type RouteKey =
-  | 'home'
-  | 'events'
-  | 'seats'
-  | 'market'
-  | 'tickets'
-  | 'register'
-  | 'sellForm'
-  | 'signup';
-
 export interface FeaturedEvent {
   id: string;
   title: string;

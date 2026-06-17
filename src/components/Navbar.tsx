@@ -1,33 +1,38 @@
 import styled from 'styled-components';
-import type { RouteKey } from '../types';
-import { useState } from 'react';
-import { logIn } from '../utils/auth';
-
+import { useNavigate, useLocation } from 'react-router-dom';
+import { loginModalStore } from '../stores/loginModalStore';
+import { useEffect } from 'react';
+import { userStore } from '../stores/userStore';
 interface NavItem {
-  key: RouteKey;
+  path: string;
   label: string;
+  activeOn: string[];
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { key: 'events', label: '공연목록' },
-  { key: 'market', label: '마켓' },
-  { key: 'tickets', label: '내 티켓' },
-  { key: 'register', label: '판매등록' },
+  { path: '/events', label: '공연목록', activeOn: ['/events', '/events/seats'] },
+  { path: '/market', label: '마켓', activeOn: ['/market'] },
+  { path: '/tickets', label: '내 티켓', activeOn: ['/tickets'] },
+  { path: '/register', label: '판매등록', activeOn: ['/register'] },
 ];
 
-interface NavbarProps {
-  active: string;
-  onNavigate: (key: RouteKey) => void;
-  authed?: boolean;
-}
+export function Navbar() {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const storedUser = localStorage.getItem('user-storage');
+  const user = storedUser ? JSON.parse(storedUser) : null;
+  const authed = Boolean(user?.state?.token);
 
-export function Navbar({ active, onNavigate, authed = false }: NavbarProps) {
-  const [isClicked, setIsClicked] = useState(false);
-
+  const setIsClicked = loginModalStore((state) => state.setIsClicked);
+  const logOut = userStore((state) => state.logOut);
+  useEffect(() => {
+    setIsClicked(false);
+  }, []);
+  
   return (
     <Bar>
       <Inner>
-        <Brand onClick={() => onNavigate('home')}>
+        <Brand onClick={() => navigate('/')}>
           <Logo aria-hidden />
           <BrandName>ChainPass</BrandName>
         </Brand>
@@ -35,9 +40,12 @@ export function Navbar({ active, onNavigate, authed = false }: NavbarProps) {
         <Links>
           {NAV_ITEMS.map((item) => (
             <Link
-              key={item.key}
-              $active={active === item.key}
-              onClick={() => onNavigate(item.key)}
+              key={item.path}
+              $active={item.activeOn.includes(pathname)}
+              onClick={() => {
+                if(authed) navigate(item.path);
+              }}
+              canClick={authed}
             >
               {item.label}
             </Link>
@@ -46,10 +54,13 @@ export function Navbar({ active, onNavigate, authed = false }: NavbarProps) {
 
         <Auth>
           {authed ? (
-            <PrimaryPill type="button">로그아웃</PrimaryPill>
+            <PrimaryPill type="button" onClick={() => {
+              logOut();
+              navigate('/');
+            }}>로그아웃</PrimaryPill>
           ) : (
             <>
-              <PrimaryPill type="button" onClick={() => onNavigate('signup')}>회원가입</PrimaryPill>
+              <PrimaryPill type="button" onClick={() => navigate('/signup')}>회원가입</PrimaryPill>
               <GhostText type="button" onClick={() => setIsClicked(true)}>로그인</GhostText>
             </>
           )}
@@ -116,7 +127,7 @@ const Links = styled.nav`
   }
 `;
 
-const Link = styled.button<{ $active: boolean }>`
+const Link = styled.button<{ $active: boolean, canClick: boolean }>`
   background: none;
   border: none;
   padding: 0;
@@ -124,7 +135,7 @@ const Link = styled.button<{ $active: boolean }>`
   font-weight: ${({ $active }) => ($active ? 600 : 400)};
   color: ${({ $active, theme }) => ($active ? theme.color.ink : theme.color.muted)};
   transition: color 0.15s ease;
-
+  cursor: ${({canClick}) => (canClick ? 'pointer' : 'not-allowed')};
   &:hover { color: ${({ theme }) => theme.color.ink}; }
 `;
 

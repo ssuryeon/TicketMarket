@@ -1,19 +1,91 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Badge, Card } from '../components/ui';
+import { Navbar } from '../components/Navbar';
+import { Badge, Card, Button } from '../components/ui';
+import {Field, Label, Input} from './SignUpScreen';
 import { ownedTickets, ticketTabs, walletProfile } from '../data/mock';
+import { me, registerAccount } from '../utils/auth';
+import { getMyTicketList } from '../utils/ticket';
+import { userStore } from '../stores/userStore';
+import { UNSAFE_RemixErrorBoundary } from 'react-router-dom';
+
+interface IUser {
+  id: string,
+  email: string,
+  nickname: string,
+  role: string,
+  wallet_address: string,
+  is_kyc: boolean,
+  bank_name: string,
+  bank_account: string,
+  bank_holder: string,
+  created_at: string,
+}
+
+interface IBank {
+  bank_name: string,
+  bank_account: string,
+  bank_holder: string,
+}
+
+interface ITicket {
+  id: string;
+  token_id: number;
+  status: string;
+  qr_version: number;
+  event_name: string;
+  venue: string;
+  event_date: string;
+  original_price: string;
+  seat_number: string;
+  created_at: string;
+}
 
 export function MyTicketsScreen() {
   const [activeTab, setActiveTab] = useState(0);
+  const [user, setUser] = useState<IUser | null>(null);
+  const [bank, setBank] = useState<IBank | null>(null);
+  const [myTickets, setMyTickets] = useState<ITicket[]>([]);
+  const token = userStore((state) => state.token);
+  const onSubmit = async (e:React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get('bank_name') as string;
+    const account = formData.get('bank_account') as string;
+    const holder = formData.get('bank_holder') as string;
+    const res = await registerAccount(name, account, holder, token);
+    console.log(res);
+    setBank({ bank_name: res.bank_name, bank_account: res.bank_account, bank_holder: res.bank_holder });
+  }
+
+  useEffect(() => {
+    const getInfo = async () => {
+      const res = await me(token);
+      console.log(res);
+      setUser(res);
+      if (res.bank_name) {
+        setBank({bank_name: res.bank_name, bank_account: res.bank_account, bank_holder: res.bank_holder});
+      }
+    }
+    const getTicketList = async () => {
+      const tickets = await getMyTicketList(token);
+      console.log(tickets);
+      setMyTickets(tickets);
+    }
+    getInfo();
+    getTicketList();
+  }, [])
 
   return (
-    <Page>
+    <>
+      <Navbar />
+      <Page>
       <Profile>
         <ProfileLeft>
           <Avatar>0x</Avatar>
           <div>
-            <Address>{walletProfile.address}</Address>
-            <ConnectedVia>{walletProfile.connectedVia}</ConnectedVia>
+            <Address>{user?.nickname}</Address>
+            <ConnectedVia>{user?.wallet_address}</ConnectedVia>
           </div>
         </ProfileLeft>
 
@@ -27,11 +99,11 @@ export function MyTicketsScreen() {
             <StatValue>{walletProfile.transferred}</StatValue>
             <StatLabel>양도 완료</StatLabel>
           </Stat>
-          <StatDivider />
+          {/* <StatDivider />
           <Stat>
             <StatValue>{walletProfile.totalSpent}</StatValue>
             <StatLabel>총 지출</StatLabel>
-          </Stat>
+          </Stat> */}
         </ProfileStats>
       </Profile>
 
@@ -43,24 +115,62 @@ export function MyTicketsScreen() {
           </Tab>
         ))}
       </Tabs>
-
-      <List>
-        {ownedTickets.map((t) => (
-          <TicketRow key={t.id}>
-            <AccentBar />
-            <RowMain>
-              <RowTitle>{t.title}</RowTitle>
-              <RowSeat>{t.seat}</RowSeat>
-              <RowDate>{t.date}</RowDate>
-            </RowMain>
-            <TokenId>{t.tokenId}</TokenId>
-            <Badge $tone="green">{t.status}</Badge>
-            <Value>{t.value}</Value>
-            <TransferBtn type="button">양도하기</TransferBtn>
-          </TicketRow>
-        ))}
-      </List>
+      
+      {
+        activeTab == 0 ? 
+          (
+            <List>
+            {myTickets?.map((t) => 
+            (
+              <TicketRow key={t.id}>
+                <AccentBar />
+                <RowMain>
+                  <RowTitle>{t.event_name}</RowTitle>
+                  <RowSeat>{t.seat_number}</RowSeat>
+                  <RowDate>{t.event_date}</RowDate>
+                </RowMain>
+                <TokenId>{t.token_id}</TokenId>
+                <Badge $tone="green">{t.status}</Badge>
+                <Value>{t.original_price}</Value>
+                <TransferBtn type="button">양도하기</TransferBtn>
+              </TicketRow>
+            ))}
+          </List>
+        ) : 
+        (
+          activeTab == 1 ? 
+          (
+            <div style={{width: '100%'}}>
+              {
+                bank == null ? null : (
+                  <TicketRow style={{marginBottom: 40}}>
+                    <AccentBar />
+                    <RowMain>
+                      <RowTitle>{bank.bank_name}</RowTitle>
+                      <RowSeat>{bank.bank_account}</RowSeat>
+                      <RowDate>{bank.bank_holder}</RowDate>
+                    </RowMain>
+                  </TicketRow>
+                )
+              }
+              <Field onSubmit={onSubmit}>
+                <Label>은행</Label>
+                <Input name='bank_name'/>
+                <Label>계좌번호</Label>
+                <Input name='bank_account'/>
+                <Label>예금주</Label>
+                <Input name='bank_holder'/>
+                <Button>정산 계좌 등록</Button>
+              </Field>
+            </div>
+          ) : 
+          (
+            null
+          )   
+        )
+      }
     </Page>
+    </>
   );
 }
 

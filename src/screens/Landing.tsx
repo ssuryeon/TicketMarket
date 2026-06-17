@@ -1,70 +1,85 @@
 import styled from 'styled-components';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Navbar } from '../components/Navbar';
 import { Button, Card, Eyebrow } from '../components/ui';
+import { Overlay } from '../components/Overlay';
+import LoginModal from '../components/LoginModal';
 import { featuredEvents, heroStats } from '../data/mock';
-import type { RouteKey } from '../types';
+import { loginModalStore } from '../stores/loginModalStore';
 
-interface LandingProps {
-  onNavigate: (key: RouteKey) => void;
-}
+export function Landing() {
+  const navigate = useNavigate();
+  const isClicked = loginModalStore(state => state.isClicked);
+  const setIsClicked = loginModalStore(state => state.setIsClicked);
+  
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    console.log(token);
+    if(token !== '' && token !== null) navigate('/events');
+  }, [])
 
-export function Landing({ onNavigate }: LandingProps) {
   return (
-    <Wrap>
-      <Hero>
-        <Pill>
-          <PillDot aria-hidden />
-          블록체인 보안 · NFT 티켓 · 위조 제로
-        </Pill>
+    <>
+      {isClicked? (<Overlay onClick={(e) => {if(e.target === e.currentTarget) setIsClicked(false);}}><LoginModal /></Overlay>) : null}
+      <Navbar />
+      <Wrap>
+        <Hero>
+          <Pill>
+            <PillDot aria-hidden />
+            블록체인 보안 · NFT 티켓 · 위조 제로
+          </Pill>
 
-        <Headline>
-          라이브 이벤트의
-          <br />
-          <Accent>새로운 미래.</Accent>
-        </Headline>
+          <Headline>
+            라이브 이벤트의
+            <br />
+            <Accent>새로운 미래.</Accent>
+          </Headline>
 
-        <Lede>
-          블록체인 위에서 이벤트 티켓을 사고, 팔고, 양도하세요.
-          <br />
-          위조 없이, 숨은 수수료 없이, 언제나 진짜 소유권.
-        </Lede>
+          <Lede>
+            블록체인 위에서 이벤트 티켓을 사고, 팔고, 양도하세요.
+            <br />
+            위조 없이, 숨은 수수료 없이, 언제나 진짜 소유권.
+          </Lede>
 
-        <Ctas>
-          <Button $variant="primary" onClick={() => onNavigate('events')}>
-            이벤트 둘러보기
-          </Button>
-          <Button $variant="outline" onClick={() => onNavigate('sellForm')}>
-            티켓 판매등록
-          </Button>
-        </Ctas>
+          <Ctas>
+            <Button $variant="primary" onClick={() => navigate('/events')}>
+              이벤트 둘러보기
+            </Button>
+            <Button $variant="outline" onClick={() => navigate('/register')}>
+              티켓 판매등록
+            </Button>
+          </Ctas>
 
-        <Stats>
-          {heroStats.map((s, i) => (
-            <Stat key={s.label} $divider={i < heroStats.length - 1}>
-              <StatValue>{s.value}</StatValue>
-              <StatLabel>{s.label}</StatLabel>
-            </Stat>
+          <Stats>
+            {heroStats.map((s, i) => (
+              <Stat key={s.label} $divider={i < heroStats.length - 1}>
+                <StatValue>{s.value}</StatValue>
+                <StatLabel>{s.label}</StatLabel>
+              </Stat>
+            ))}
+          </Stats>
+        </Hero>
+
+        <FeaturedLabel>추천 이벤트</FeaturedLabel>
+        <Grid>
+          {featuredEvents.map((ev) => (
+            <EventCard key={ev.id} onClick={() => navigate('/events/seats')}>
+              <CardTitle>{ev.title}</CardTitle>
+              <CardMeta>{ev.venueDate}</CardMeta>
+              <CardLine />
+              <FloorLabel>최저가</FloorLabel>
+              <PriceRow>
+                <Price>
+                  {ev.fromPrice} <Won>₩</Won>
+                </Price>
+                <Left>{ev.seatsLeft}</Left>
+              </PriceRow>
+            </EventCard>
           ))}
-        </Stats>
-      </Hero>
-
-      <FeaturedLabel>추천 이벤트</FeaturedLabel>
-      <Grid>
-        {featuredEvents.map((ev) => (
-          <EventCard key={ev.id} onClick={() => onNavigate('seats')}>
-            <CardTitle>{ev.title}</CardTitle>
-            <CardMeta>{ev.venueDate}</CardMeta>
-            <CardLine />
-            <FloorLabel>최저가</FloorLabel>
-            <PriceRow>
-              <Price>
-                {ev.fromPrice} <Won>₩</Won>
-              </Price>
-              <Left>{ev.seatsLeft}</Left>
-            </PriceRow>
-          </EventCard>
-        ))}
-      </Grid>
-    </Wrap>
+        </Grid>
+      </Wrap>
+    </>
   );
 }
 

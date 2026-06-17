@@ -1,12 +1,20 @@
 import { useState } from 'react';
 import styled from 'styled-components';
+import { Navbar } from '../components/Navbar';
+import { Overlay } from '../components/Overlay';
 import { Button } from '../components/ui';
 import { signUp } from '../utils/auth';
+import LoginModal from '../components/LoginModal';
+import { loginModalStore } from '../stores/loginModalStore';
+import { userStore } from '../stores/userStore';
 
 export function SignUpScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [nickname, setNickname] = useState('');
+  const isClicked = loginModalStore((state) => state.isClicked);
+  const setIsClicked = loginModalStore((state) => state.setIsClicked);
+  const storeUserInfo = userStore((state) => state.signUp);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -16,10 +24,15 @@ export function SignUpScreen() {
     const nickname = formData.get('password') as string;
     const res = await signUp(email, password, nickname);
     console.log(res);
+    storeUserInfo(res.email, res.nickname, res.token, res.wallet_address);
+    console.log('회원 정보 저장 완료')
   };
 
   return (
-    <Wrap>
+    <>
+      {isClicked? (<Overlay onClick={(e) => {if(e.target === e.currentTarget) setIsClicked(false);}}><LoginModal /></Overlay>) : null}
+      <Navbar />
+      <Wrap>
       <FormCard onSubmit={handleSubmit}>
         <Title>회원가입</Title>
 
@@ -61,6 +74,7 @@ export function SignUpScreen() {
         </Button>
       </FormCard>
     </Wrap>
+    </>
   );
 }
 
@@ -93,18 +107,18 @@ const Title = styled.h1`
   color: ${({ theme }) => theme.color.ink};
 `;
 
-const Field = styled.div`
+export const Field = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
 `;
 
-const Label = styled.label`
+export const Label = styled.label`
   font-size: 14px;
   color: ${({ theme }) => theme.color.muted};
 `;
 
-const Input = styled.input`
+export const Input = styled.input`
   height: 50px;
   padding: 0 16px;
   border: 1px solid ${({ theme }) => theme.color.border};

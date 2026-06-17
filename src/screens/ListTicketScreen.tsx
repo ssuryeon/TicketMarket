@@ -1,85 +1,158 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import { Navbar } from '../components/Navbar';
 import { Button, Card, Eyebrow } from '../components/ui';
+import { getMyTicketList } from '../utils/ticket';
+import { registerMarket } from '../utils/market';
+import { userStore } from '../stores/userStore';
+
+interface ITicket {
+  id: string;
+  token_id: number;
+  status: string;
+  qr_version: number;
+  event_name: string;
+  venue: string;
+  event_date: string;
+  original_price: string;
+  seat_number: string;
+  created_at: string;
+}
 
 export function ListTicketScreen() {
-  const [price, setPrice] = useState('0.95');
-  const [expiry, setExpiry] = useState('2025년 7월 10일');
+  const [myTickets, setMyTickets] = useState<ITicket[]>([]);
+  const [selectedTicket, setSelectedTicket] = useState<ITicket | null>(null);
+  const [price, setPrice] = useState('');
+  const [loading, setLoading] = useState(true);
+  const token = userStore((state) => state.token);
+
+  useEffect(() => {
+    const fetchTickets = async () => {
+      try {
+        const tickets = await getMyTicketList(token);
+        setMyTickets(Array.isArray(tickets) ? tickets : []);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTickets();
+  }, [token]);
+
+  const handleSelectTicket = (ticket: ITicket) => {
+    setSelectedTicket(ticket);
+    setPrice('');
+  };
+
+  const handleRegister = async () => {
+    if (!selectedTicket || !price) return;
+    const res = await registerMarket(selectedTicket.token_id, parseFloat(price));
+    console.log(res);
+    alert('마켓에 티켓이 등록되었습니다.');
+    setSelectedTicket(null);
+    setPrice('');
+  };
 
   return (
-    <Page>
-      <Title>티켓 판매등록</Title>
-      <Subtitle>가격을 정하고 온체인에 등록하세요. 구매자가 지갑에서 직접 구매합니다.</Subtitle>
+    <>
+      <Navbar />
+      <Page>
+        <Title>티켓 판매등록</Title>
+        <Subtitle>가격을 정하고 온체인에 등록하세요. 구매자가 지갑에서 직접 구매합니다.</Subtitle>
 
-      <Layout>
-        <FormCard>
-          <FormTitle>판매 정보</FormTitle>
+        {selectedTicket ? (
+          <>
+            <BackBtn onClick={() => setSelectedTicket(null)}>← 다른 티켓 선택</BackBtn>
+            <Layout>
+              <FormCard>
+                <FormTitle>판매 정보</FormTitle>
 
-          <Field>
-            <Label>티켓 선택</Label>
-            <Input as="div" $readonly>
-              콜드플레이 · Music of the Spheres — #0042
-            </Input>
-          </Field>
+                <Field>
+                  <Label>티켓 선택</Label>
+                  <Input as="div" $readonly>
+                    {selectedTicket.event_name} — #{selectedTicket.token_id}
+                  </Input>
+                </Field>
 
-          <Field>
-            <Label>판매 가격 (ETH)</Label>
-            <Input
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              inputMode="decimal"
-            />
-          </Field>
+                <Field>
+                  <Label>판매 가격 (ETH)</Label>
+                  <Input
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    inputMode="decimal"
+                    placeholder="0.00"
+                  />
+                </Field>
 
-          <Field>
-            <Label>만료일</Label>
-            <Input value={expiry} onChange={(e) => setExpiry(e.target.value)} />
-          </Field>
+                <FeeNote>최종 판매가에서 플랫폼 수수료 2% + 창작자 로열티 1%가 자동 차감됩니다.</FeeNote>
 
-          <FeeNote>최종 판매가에서 플랫폼 수수료 2% + 창작자 로열티 1%가 자동 차감됩니다.</FeeNote>
+                <Button $variant="primary" $full onClick={handleRegister}>
+                  마켓에 티켓 등록
+                </Button>
+              </FormCard>
 
-          <Button $variant="primary" $full>
-            마켓에 티켓 등록
-          </Button>
-        </FormCard>
+              <PreviewSide>
+                <Eyebrow>미리보기</Eyebrow>
+                <PreviewCard>
+                  <PreviewAccent />
+                  <ArtistName>{selectedTicket.event_name}</ArtistName>
+                  <TourName>{selectedTicket.venue}</TourName>
 
-        <PreviewSide>
-          <Eyebrow>미리보기</Eyebrow>
-          <PreviewCard>
-            <PreviewAccent />
-            <ArtistName>Coldplay</ArtistName>
-            <TourName>Music of the Spheres</TourName>
+                  <InfoBlock>
+                    <InfoLabel>일시</InfoLabel>
+                    <InfoValue>{selectedTicket.event_date}</InfoValue>
+                  </InfoBlock>
+                  <InfoBlock>
+                    <InfoLabel>좌석</InfoLabel>
+                    <InfoValue>{selectedTicket.seat_number}</InfoValue>
+                  </InfoBlock>
 
-            <InfoBlock>
-              <InfoLabel>일시</InfoLabel>
-              <InfoValue>2025년 7월 12일 · 오후 7:00 KST</InfoValue>
-            </InfoBlock>
-            <InfoBlock>
-              <InfoLabel>장소</InfoLabel>
-              <InfoValue>서울올림픽주경기장</InfoValue>
-            </InfoBlock>
-            <InfoBlock>
-              <InfoLabel>좌석</InfoLabel>
-              <InfoValue>A구역 — 앞열 · 14B석</InfoValue>
-            </InfoBlock>
+                  <PerfLine />
 
-            <PerfLine />
+                  <InfoBlock>
+                    <InfoLabel>토큰 ID</InfoLabel>
+                    <TokenValue>#{selectedTicket.token_id}</TokenValue>
+                  </InfoBlock>
 
-            <InfoBlock>
-              <InfoLabel>토큰 ID</InfoLabel>
-              <TokenValue>#0042 · 0x4a2f...8c3d</TokenValue>
-            </InfoBlock>
+                  {price && (
+                    <AskBox>
+                      <AskLabel>판매 희망가</AskLabel>
+                      <AskValue>{price} ETH</AskValue>
+                    </AskBox>
+                  )}
+                </PreviewCard>
 
-            <AskBox>
-              <AskLabel>판매 희망가</AskLabel>
-              <AskValue>{price || '0'} ETH</AskValue>
-            </AskBox>
-          </PreviewCard>
-
-          <ChainNote>스마트 컨트랙트 등록 · 즉시 정산 · 비수탁형</ChainNote>
-        </PreviewSide>
-      </Layout>
-    </Page>
+                <ChainNote>스마트 컨트랙트 등록 · 즉시 정산 · 비수탁형</ChainNote>
+              </PreviewSide>
+            </Layout>
+          </>
+        ) : (
+          <TicketSelectSection>
+            <SectionLabel>보유 티켓 선택</SectionLabel>
+            {loading ? (
+              <EmptyMsg>불러오는 중...</EmptyMsg>
+            ) : myTickets.length === 0 ? (
+              <EmptyMsg>판매 등록 가능한 티켓이 없습니다.</EmptyMsg>
+            ) : (
+              <TicketList>
+                {myTickets.map((t) => (
+                  <TicketRow key={t.id} onClick={() => handleSelectTicket(t)}>
+                    <AccentBar />
+                    <RowMain>
+                      <RowTitle>{t.event_name}</RowTitle>
+                      <RowSeat>{t.seat_number}</RowSeat>
+                      <RowDate>{t.event_date}</RowDate>
+                    </RowMain>
+                    <TokenId>#{t.token_id}</TokenId>
+                    <OriginalPrice>{t.original_price}</OriginalPrice>
+                    <SelectHint>선택 →</SelectHint>
+                  </TicketRow>
+                ))}
+              </TicketList>
+            )}
+          </TicketSelectSection>
+        )}
+      </Page>
+    </>
   );
 }
 
@@ -105,6 +178,18 @@ const Subtitle = styled.p`
   margin: 12px 0 0;
   font-size: 15px;
   color: ${({ theme }) => theme.color.muted};
+`;
+
+const BackBtn = styled.button`
+  margin-top: 24px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: ${({ theme }) => theme.color.accent};
+  cursor: pointer;
+  padding: 0;
+
+  &:hover { opacity: 0.7; }
 `;
 
 const Layout = styled.div`
@@ -154,6 +239,7 @@ const Input = styled.input<{ $readonly?: boolean }>`
   background: ${({ theme }) => theme.color.bg};
   font-size: 13px;
   color: ${({ theme }) => theme.color.ink};
+  box-sizing: border-box;
 
   &:focus { border-color: ${({ theme }) => theme.color.accent}; outline: none; }
 `;
@@ -252,4 +338,95 @@ const ChainNote = styled.p`
   margin: 22px 0 0;
   font-size: 12px;
   color: ${({ theme }) => theme.color.mutedLight};
+`;
+
+const TicketSelectSection = styled.div`
+  margin-top: 36px;
+`;
+
+const SectionLabel = styled.h2`
+  margin: 0 0 20px;
+  font-size: 17px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.color.ink};
+`;
+
+const EmptyMsg = styled.p`
+  font-size: 14px;
+  color: ${({ theme }) => theme.color.muted};
+`;
+
+const TicketList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+const TicketRow = styled(Card)`
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.6fr 0.8fr auto auto auto;
+  align-items: center;
+  gap: 24px;
+  padding: 22px 28px 22px 32px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.color.accent};
+  }
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+`;
+
+const AccentBar = styled.span`
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: ${({ theme }) => theme.color.accent};
+`;
+
+const RowMain = styled.div``;
+
+const RowTitle = styled.h3`
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.color.ink};
+`;
+
+const RowSeat = styled.div`
+  margin-top: 8px;
+  font-size: 12px;
+  color: ${({ theme }) => theme.color.muted};
+`;
+
+const RowDate = styled.div`
+  margin-top: 4px;
+  font-size: 12px;
+  color: ${({ theme }) => theme.color.muted};
+`;
+
+const TokenId = styled.div`
+  font-size: 11px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.color.accent};
+`;
+
+const OriginalPrice = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.color.ink};
+`;
+
+const SelectHint = styled.div`
+  font-size: 12px;
+  color: ${({ theme }) => theme.color.accent};
+  font-weight: 500;
 `;

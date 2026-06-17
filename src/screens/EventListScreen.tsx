@@ -1,34 +1,56 @@
 import styled from 'styled-components';
+import { useNavigate } from 'react-router-dom';
+import { Navbar } from '../components/Navbar';
 import { Card, Page, PageTitle } from '../components/ui';
-import { eventList } from '../data/mock';
-import type { RouteKey } from '../types';
+// import { eventList } from '../data/mock';
+import { getEventList } from '../utils/event';
+import {useEffect, useState} from 'react';
 
-interface EventListScreenProps {
-  onNavigate: (key: RouteKey) => void;
+interface IEvent {
+  id: string,
+  name: string,
+  venue: string,
+  event_date: string,
+  original_price: string,
+  total_seats: number,
 }
 
-export function EventListScreen({ onNavigate }: EventListScreenProps) {
-  return (
-    <Page>
-      <PageTitle>공연 목록</PageTitle>
+export function EventListScreen() {
+  const navigate = useNavigate();
+  const [eventList, setEventList] = useState<IEvent[]>([]);
+  useEffect(() => {
+    const get = async () => {
+      const r = await getEventList();
+      console.log(r);
+      setEventList(r);
+    }
+    get();
+  }, [])
 
-      <Grid>
-        {eventList.map((ev) => (
-          <EventCard key={ev.id} onClick={() => onNavigate('seats')}>
-            <Title>{ev.title}</Title>
-            <Meta>{ev.venueDate}</Meta>
-            <Line />
-            <FloorLabel>최저가</FloorLabel>
-            <PriceRow>
-              <Price>
-                {ev.fromPrice} <Won>₩</Won>
-              </Price>
-              <Left>{ev.seatsLeft}</Left>
-            </PriceRow>
-          </EventCard>
-        ))}
-      </Grid>
-    </Page>
+  return (
+    <>
+      <Navbar />
+      <Page>
+        <PageTitle>공연 목록</PageTitle>
+
+        <Grid>
+          {eventList.map((ev) => (
+            <EventCard key={ev.id} onClick={() => navigate(`/events/${ev.id}/seats`, {state: {name: ev.name, event_date: ev.event_date, venue: ev.venue, original_price: ev.original_price, total_seats: ev.total_seats}})}>
+              <Title>{ev.name}</Title>
+              <Meta>{ev.event_date.split("T")[0]} · {ev.venue}</Meta>
+              <Line />
+              <FloorLabel>최저가</FloorLabel>
+              <PriceRow>
+                <Price>
+                  {ev.original_price} <Won>₩</Won>
+                </Price>
+                <Left>{ev.total_seats}</Left>
+              </PriceRow>
+            </EventCard>
+          ))}
+        </Grid>
+      </Page>
+    </>
   );
 }
 

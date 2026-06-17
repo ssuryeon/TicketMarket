@@ -1,98 +1,187 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { SeatMap } from '../components/SeatMap';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { Navbar } from '../components/Navbar';
+import { SeatGrid } from '../components/SeatGrid';
 import { Button, formatKRW } from '../components/ui';
-import { seatEvent, seatSections } from '../data/mock';
-import type { RouteKey } from '../types';
+import { Overlay } from '../components/Overlay';
+import { getSeats } from '../utils/event';
+import { purchaseTicket } from '../utils/ticket';
+import { userStore } from '../stores/userStore';
 
-interface SeatSelectScreenProps {
-  onNavigate: (key: RouteKey) => void;
+interface ISeat {
+  id: string;
+  seat_number: string;
+  status: 'AVAILABLE' | 'SOLD';
 }
 
-const PICKED_SEATS = [70, 84, 86, 99, 116, 120];
-const SELECTED_TRIBUNE = [0, 1];
+export function SeatSelectScreen() {
+  const navigate = useNavigate();
+  const { eventId } = useParams<{ eventId: string }>();
+  const [selectedSeatIds, setSelectedSeatIds] = useState<Set<string>>(new Set());
+  const [seats, setSeats] = useState<ISeat[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const location = useLocation();
+  const token = userStore((state) => state.token);
+  const ticketInfo = location.state as { name: string; event_date: string, venue:string, original_price: string, total_seats: string } | null;
 
-export function SeatSelectScreen({ onNavigate }: SeatSelectScreenProps) {
-  const [selectedId, setSelectedId] = useState('a');
-  const [qty, setQty] = useState(2);
+  useEffect(() => {
+    if (!ticketInfo) {
+      navigate(-1);
+      return;
+    }
+    if (!eventId) return;
+    const load = async () => {
+      const data = await getSeats(eventId);
+      setSeats(data);
+    };
+    load();
+  }, [eventId]);
 
-  const selectedSection = useMemo(
-    () => seatSections.find((s) => s.id === selectedId) ?? seatSections[1],
-    [selectedId],
+  const handleSeatToggle = (id: string) => {
+    setSelectedSeatIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else if (next.size < 4) {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const derivedSection = { id: 'a', name: 'A구역', seats: `${ticketInfo?.total_seats}석`, price: Number(ticketInfo?.original_price) };
+
+  const availableCount = useMemo(
+    () => seats.filter((s) => s.status === 'AVAILABLE').length,
+    [seats],
   );
 
-  const total = selectedSection.price * qty;
+  const total = derivedSection.price * selectedSeatIds.size;
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+  };
+
+  const handleConfirm = async () => {
+    if (!eventId || !token) return;
+    for (const seatId of selectedSeatIds) {
+      const res = await purchaseTicket(eventId, seatId, token);
+      console.log(res);
+    }
+    navigate('/tickets');
+  };
 
   return (
-    <Page>
-      <Breadcrumb>{seatEvent.breadcrumb}</Breadcrumb>
-      <Title>{seatEvent.title}</Title>
-      <DateLine>{seatEvent.dateLine}</DateLine>
+    <>
+      <Navbar />
+      <Page>
+        <Title>{ticketInfo?.name}</Title>
+        <DateLine>{ticketInfo?.event_date.split("T")[0]} · {ticketInfo?.venue}</DateLine>
 
-      <Layout>
-        <SeatMap pickedSeats={PICKED_SEATS} selectedSeats={SELECTED_TRIBUNE} />
+        <Layout>
+          <SeatGrid
+            seats={seats}
+            selectedIds={selectedSeatIds}
+            onToggle={handleSeatToggle}
+          />
 
-        <Panel>
-          <PanelInner>
-            <PanelTitle>구역 선택</PanelTitle>
+          <Panel>
+            <PanelInner>
+              <SectionCard>
+                <SectionHeader>
+                  <SectionName>
+                    {derivedSection.name}
+                  </SectionName>
+                  <SectionPrice>{formatKRW(derivedSection.price)} <Won>₩</Won></SectionPrice>
+                </SectionHeader>
+                <SectionMeta>
+                  {seats.length > 0 ? `${availableCount}석 남음 / 전체 ${seats.length}석` : '불러오는 중...'}
+                </SectionMeta>
+              </SectionCard>
 
-            <Sections>
-              {seatSections.map((section) => {
-                const active = section.id === selectedId;
-                return (
-                  <SectionRow
-                    key={section.id}
-                    $active={active}
-                    onClick={() => setSelectedId(section.id)}
-                    aria-pressed={active}
-                  >
-                    <SectionInfo>
-                      <SectionName>
-                        {section.name}
-                        {section.rare && <RareTag>희소</RareTag>}
-                      </SectionName>
-                      <SectionSeats>{section.seats}</SectionSeats>
-                    </SectionInfo>
-                    <SectionPrice $active={active}>
-                      {formatKRW(section.price)} <Won>₩</Won>
-                    </SectionPrice>
-                  </SectionRow>
-                );
-              })}
-            </Sections>
+              <Divider />
 
-            <QtyRow>
-              <QtyLabel>수량</QtyLabel>
-              <QtyTotal>
-                {formatKRW(total)} <Won>₩</Won>
-              </QtyTotal>
-            </QtyRow>
+              <QtyBlock>
+                <QtyRow>
+                  <QtyLabel>선택된 좌석</QtyLabel>
+                  <QtyCount>{selectedSeatIds.size} / 4</QtyCount>
+                </QtyRow>
+                <SelectedSeats>
+                  {selectedSeatIds.size === 0 ? (
+                    <EmptySeat>좌석을 선택하세요</EmptySeat>
+                  ) : (
+                    [...selectedSeatIds].map((id) => {
+                      const seat = seats.find((s) => s.id === id);
+                      return seat ? <SeatTag key={id}>{seat.seat_number}</SeatTag> : null;
+                    })
+                  )}
+                </SelectedSeats>
+              </QtyBlock>
 
-            <Stepper>
-              <StepBtn
-                type="button"
-                onClick={() => setQty((q) => Math.max(1, q - 1))}
-                aria-label="수량 감소"
-              >
-                −
-              </StepBtn>
-              <StepValue>{qty}</StepValue>
-              <StepBtn
-                type="button"
-                onClick={() => setQty((q) => Math.min(4, q + 1))}
-                aria-label="수량 증가"
-              >
-                +
-              </StepBtn>
-            </Stepper>
-          </PanelInner>
+              <Divider />
 
-          <CheckoutBtn $variant="primary" onClick={() => onNavigate('home')}>
-            결제 진행하기
-          </CheckoutBtn>
-        </Panel>
-      </Layout>
-    </Page>
+              <TotalRow>
+                <TotalLabel>합계</TotalLabel>
+                <TotalValue>{formatKRW(total)} <Won>₩</Won></TotalValue>
+              </TotalRow>
+            </PanelInner>
+
+            <CheckoutBtn
+              $variant="primary"
+              disabled={selectedSeatIds.size === 0}
+              onClick={() => setShowModal(true)}
+            >
+              결제 진행하기
+            </CheckoutBtn>
+          </Panel>
+        </Layout>
+      </Page>
+
+      {showModal && ticketInfo && (
+        <Overlay onClick={() => setShowModal(false)}>
+          <Modal onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+            <ModalTitle>주문 요약</ModalTitle>
+
+            <ModalEventCard>
+              <ModalEventBorder />
+              <ModalEventContent>
+                <ModalEventName>{ticketInfo.name}</ModalEventName>
+                <ModalEventMeta>
+                  {formatDate(ticketInfo.event_date)} · {ticketInfo.venue}
+                </ModalEventMeta>
+                {selectedSeatIds.size > 0 && (
+                  <ModalEventSeats>
+                    {[...selectedSeatIds]
+                      .map((id) => seats.find((s) => s.id === id)?.seat_number)
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </ModalEventSeats>
+                )}
+              </ModalEventContent>
+            </ModalEventCard>
+
+            <ModalPriceRow>
+              <span>{derivedSection.name} {selectedSeatIds.size}매</span>
+              <span>{formatKRW(total)} ₩</span>
+            </ModalPriceRow>
+
+            <ModalDivider />
+
+            <ModalTotalRow>
+              <ModalTotalLabel>합계</ModalTotalLabel>
+              <ModalTotalValue>{formatKRW(total)} ₩</ModalTotalValue>
+            </ModalTotalRow>
+
+            <ModalConfirmBtn $variant="primary" onClick={handleConfirm}>
+              블록체인에서 결제 확정
+            </ModalConfirmBtn>
+            <ModalSubtext>이더리움 스마트 컨트랙트로 보호됨</ModalSubtext>
+          </Modal>
+        </Overlay>
+      )}
+    </>
   );
 }
 
@@ -127,10 +216,10 @@ const DateLine = styled.p`
 
 const Layout = styled.div`
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
   gap: 32px;
   margin-top: 32px;
-  align-items: start;
+  align-items: stretch;
 
   @media (max-width: 1024px) {
     grid-template-columns: 1fr;
@@ -144,53 +233,34 @@ const Panel = styled.div`
 `;
 
 const PanelInner = styled.div`
+  flex: 1;
   background: ${({ theme }) => theme.color.card};
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: ${({ theme }) => theme.radius.lg};
   box-shadow: ${({ theme }) => theme.shadow.card};
   padding: 28px;
-`;
-
-const PanelTitle = styled.h2`
-  margin: 0 0 20px;
-  font-size: 16px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.color.ink};
-`;
-
-const Sections = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 12px;
 `;
 
-const SectionRow = styled.button<{ $active: boolean }>`
+const SectionCard = styled.div`
+  padding: 20px 22px;
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme }) => theme.color.accentSoft};
+  border: 1.5px solid ${({ theme }) => theme.color.accent};
+`;
+
+const SectionHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
-  padding: 16px 20px;
-  border-radius: ${({ theme }) => theme.radius.md};
-  background: ${({ $active, theme }) => ($active ? theme.color.accentSoft : theme.color.card)};
-  border: ${({ $active, theme }) =>
-    $active ? `1.5px solid ${theme.color.accent}` : `1px solid ${theme.color.border}`};
-  transition: border-color 0.15s ease, background 0.15s ease;
-
-  &:hover {
-    border-color: ${({ $active, theme }) =>
-      $active ? theme.color.accent : theme.color.mutedLight};
-  }
-`;
-
-const SectionInfo = styled.div`
-  text-align: left;
 `;
 
 const SectionName = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: ${({ theme }) => theme.color.ink};
 `;
@@ -204,27 +274,34 @@ const RareTag = styled.span`
   font-weight: 600;
 `;
 
-const SectionSeats = styled.div`
-  margin-top: 4px;
-  font-size: 12px;
-  color: ${({ theme }) => theme.color.muted};
-`;
-
-const SectionPrice = styled.div<{ $active: boolean }>`
-  font-size: 20px;
+const SectionPrice = styled.div`
+  font-size: 22px;
   font-weight: 700;
-  color: ${({ $active, theme }) => ($active ? theme.color.accent : theme.color.ink)};
+  color: ${({ theme }) => theme.color.accent};
 `;
 
-const Won = styled.span`
-  font-size: 15px;
+const SectionMeta = styled.div`
+  margin-top: 8px;
+  font-size: 12px;
+  color: ${({ theme }) => theme.color.accent};
+  opacity: 0.8;
+`;
+
+const Divider = styled.hr`
+  border: none;
+  border-top: 1px solid ${({ theme }) => theme.color.border};
+  margin: 22px 0;
+`;
+
+const QtyBlock = styled.div`
+  flex: 1;
 `;
 
 const QtyRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 28px;
+  margin-bottom: 14px;
 `;
 
 const QtyLabel = styled.div`
@@ -233,41 +310,154 @@ const QtyLabel = styled.div`
   color: ${({ theme }) => theme.color.ink};
 `;
 
-const QtyTotal = styled.div`
-  font-size: 26px;
+const QtyCount = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.color.accent};
+`;
+
+const SelectedSeats = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 36px;
+`;
+
+const EmptySeat = styled.span`
+  font-size: 13px;
+  color: ${({ theme }) => theme.color.mutedLight};
+  align-self: center;
+`;
+
+const SeatTag = styled.span`
+  padding: 6px 12px;
+  border-radius: ${({ theme }) => theme.radius.sm};
+  background: ${({ theme }) => theme.color.accentSoft};
+  color: ${({ theme }) => theme.color.accent};
+  font-size: 12px;
+  font-weight: 600;
+`;
+
+const TotalRow = styled.div`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+`;
+
+const TotalLabel = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.color.ink};
+`;
+
+const TotalValue = styled.div`
+  font-size: 28px;
   font-weight: 700;
   color: ${({ theme }) => theme.color.ink};
 `;
 
-const Stepper = styled.div`
-  display: inline-flex;
-  align-items: center;
-  margin-top: 14px;
-  border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: ${({ theme }) => theme.radius.sm};
-  overflow: hidden;
-`;
-
-const StepBtn = styled.button`
-  width: 44px;
-  height: 44px;
-  background: ${({ theme }) => theme.color.card};
-  border: none;
+const Won = styled.span`
   font-size: 18px;
-  color: ${({ theme }) => theme.color.muted};
-
-  &:hover { background: ${({ theme }) => theme.color.bg}; }
-`;
-
-const StepValue = styled.div`
-  width: 56px;
-  text-align: center;
-  font-size: 16px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.color.ink};
 `;
 
 const CheckoutBtn = styled(Button)`
   align-self: flex-end;
   min-width: 220px;
+`;
+
+const Modal = styled.div`
+  background: ${({ theme }) => theme.color.card};
+  border-radius: ${({ theme }) => theme.radius.lg};
+  box-shadow: ${({ theme }) => theme.shadow.card};
+  padding: 36px 32px 28px;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+`;
+
+const ModalTitle = styled.h2`
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.color.ink};
+`;
+
+const ModalEventCard = styled.div`
+  display: flex;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  overflow: hidden;
+`;
+
+const ModalEventBorder = styled.div`
+  width: 4px;
+  background: ${({ theme }) => theme.color.accent};
+  flex-shrink: 0;
+`;
+
+const ModalEventContent = styled.div`
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const ModalEventName = styled.div`
+  font-size: 16px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.color.ink};
+`;
+
+const ModalEventMeta = styled.div`
+  font-size: 13px;
+  color: ${({ theme }) => theme.color.muted};
+`;
+
+const ModalEventSeats = styled.div`
+  font-size: 13px;
+  color: ${({ theme }) => theme.color.muted};
+`;
+
+const ModalPriceRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: ${({ theme }) => theme.color.ink};
+`;
+
+const ModalDivider = styled.hr`
+  border: none;
+  border-top: 1px solid ${({ theme }) => theme.color.border};
+  margin: 0;
+`;
+
+const ModalTotalRow = styled.div`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+`;
+
+const ModalTotalLabel = styled.div`
+  font-size: 16px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.color.ink};
+`;
+
+const ModalTotalValue = styled.div`
+  font-size: 28px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.color.ink};
+`;
+
+const ModalConfirmBtn = styled(Button)`
+  width: 100%;
+`;
+
+const ModalSubtext = styled.p`
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  color: ${({ theme }) => theme.color.mutedLight};
 `;
