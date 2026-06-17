@@ -7,7 +7,6 @@ import { ownedTickets, ticketTabs, walletProfile } from '../data/mock';
 import { me, registerAccount } from '../utils/auth';
 import { getMyTicketList } from '../utils/ticket';
 import { userStore } from '../stores/userStore';
-import { UNSAFE_RemixErrorBoundary } from 'react-router-dom';
 
 interface IUser {
   id: string,
@@ -49,6 +48,7 @@ export function MyTicketsScreen() {
   const token = userStore((state) => state.token);
   const onSubmit = async (e:React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!token) return;
     const formData = new FormData(e.currentTarget);
     const name = formData.get('bank_name') as string;
     const account = formData.get('bank_account') as string;
@@ -59,6 +59,7 @@ export function MyTicketsScreen() {
   }
 
   useEffect(() => {
+    if (!token) return;
     const getInfo = async () => {
       const res = await me(token);
       console.log(res);
@@ -74,7 +75,7 @@ export function MyTicketsScreen() {
     }
     getInfo();
     getTicketList();
-  }, [])
+  }, [token])
 
   return (
     <>
@@ -153,15 +154,21 @@ export function MyTicketsScreen() {
                   </TicketRow>
                 )
               }
-              <Field onSubmit={onSubmit}>
-                <Label>은행</Label>
-                <Input name='bank_name'/>
-                <Label>계좌번호</Label>
-                <Input name='bank_account'/>
-                <Label>예금주</Label>
-                <Input name='bank_holder'/>
+              <BankForm onSubmit={onSubmit}>
+                <Field>
+                  <Label>은행</Label>
+                  <Input name='bank_name'/>
+                </Field>
+                <Field>
+                  <Label>계좌번호</Label>
+                  <Input name='bank_account'/>
+                </Field>
+                <Field>
+                  <Label>예금주</Label>
+                  <Input name='bank_holder'/>
+                </Field>
                 <Button>정산 계좌 등록</Button>
-              </Field>
+              </BankForm>
             </div>
           ) : 
           (
@@ -342,6 +349,14 @@ const Value = styled.div`
   font-size: 18px;
   font-weight: 700;
   color: ${({ theme }) => theme.color.ink};
+`;
+
+const BankForm = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 480px;
 `;
 
 const TransferBtn = styled.button`
