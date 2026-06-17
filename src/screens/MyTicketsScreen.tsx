@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { Navbar } from '../components/Navbar';
 import { Badge, Card, Button } from '../components/ui';
 import {Field, Label, Input} from './SignUpScreen';
-import { ownedTickets, ticketTabs, walletProfile } from '../data/mock';
+import { ticketTabs, walletProfile } from '../data/mock';
 import { me, registerAccount } from '../utils/auth';
 import { getMyTicketList } from '../utils/ticket';
 import { userStore } from '../stores/userStore';
@@ -92,14 +92,14 @@ export function MyTicketsScreen() {
 
         <ProfileStats>
           <Stat>
-            <StatValue>{walletProfile.owned}</StatValue>
+            <StatValue>{myTickets.length}</StatValue>
             <StatLabel>보유 티켓</StatLabel>
           </Stat>
-          <StatDivider />
+          {/* <StatDivider />
           <Stat>
             <StatValue>{walletProfile.transferred}</StatValue>
             <StatLabel>양도 완료</StatLabel>
-          </Stat>
+          </Stat> */}
           {/* <StatDivider />
           <Stat>
             <StatValue>{walletProfile.totalSpent}</StatValue>
@@ -128,12 +128,11 @@ export function MyTicketsScreen() {
                 <RowMain>
                   <RowTitle>{t.event_name}</RowTitle>
                   <RowSeat>{t.seat_number}</RowSeat>
-                  <RowDate>{t.event_date}</RowDate>
+                  <RowDate>{t.event_date.split("T")[0]}</RowDate>
                 </RowMain>
                 <TokenId>{t.token_id}</TokenId>
                 <Badge $tone="green">{t.status}</Badge>
                 <Value>{t.original_price}</Value>
-                <TransferBtn type="button">양도하기</TransferBtn>
               </TicketRow>
             ))}
           </List>

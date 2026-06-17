@@ -45,9 +45,9 @@ export function ListTicketScreen() {
 
   const handleRegister = async () => {
     if (!selectedTicket || !price) return;
-    const res = await registerMarket(selectedTicket.token_id, parseFloat(price));
+    const res = await registerMarket(selectedTicket.token_id, parseFloat(price), token);
     console.log(res);
-    alert('마켓에 티켓이 등록되었습니다.');
+    if(res.ok) alert('마켓에 티켓이 등록되었습니다.');
     setSelectedTicket(null);
     setPrice('');
   };
@@ -69,17 +69,16 @@ export function ListTicketScreen() {
                 <Field>
                   <Label>티켓 선택</Label>
                   <Input as="div" $readonly>
-                    {selectedTicket.event_name} — #{selectedTicket.token_id}
+                    {selectedTicket.event_name} — {selectedTicket.seat_number}
                   </Input>
                 </Field>
 
                 <Field>
-                  <Label>판매 가격 (ETH)</Label>
+                  <Label>판매 가격 (₩)</Label>
                   <Input
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
                     inputMode="decimal"
-                    placeholder="0.00"
                   />
                 </Field>
 
@@ -99,7 +98,7 @@ export function ListTicketScreen() {
 
                   <InfoBlock>
                     <InfoLabel>일시</InfoLabel>
-                    <InfoValue>{selectedTicket.event_date}</InfoValue>
+                    <InfoValue>{selectedTicket.event_date.split("T")[0]}</InfoValue>
                   </InfoBlock>
                   <InfoBlock>
                     <InfoLabel>좌석</InfoLabel>
@@ -116,7 +115,7 @@ export function ListTicketScreen() {
                   {price && (
                     <AskBox>
                       <AskLabel>판매 희망가</AskLabel>
-                      <AskValue>{price} ETH</AskValue>
+                      <AskValue>{price} 원</AskValue>
                     </AskBox>
                   )}
                 </PreviewCard>
