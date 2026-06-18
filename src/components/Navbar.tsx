@@ -34,7 +34,7 @@ export function Navbar() {
       <Inner>
         <Brand onClick={() => navigate('/')}>
           <Logo aria-hidden />
-          <BrandName>ChainPass</BrandName>
+          <BrandName>FanLink</BrandName>
         </Brand>
 
         <Links>

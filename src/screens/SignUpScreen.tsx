@@ -23,7 +23,7 @@ export function SignUpScreen() {
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
-    const nickname = formData.get('password') as string;
+    const nickname = formData.get('nickname') as string;
     const res = await signUp(email, password, nickname);
     console.log(res);
     storeUserInfo(res.email, res.nickname, res.token, res.wallet_address);
