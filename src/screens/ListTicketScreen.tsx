@@ -115,7 +115,7 @@ export function ListTicketScreen() {
                   {price && (
                     <AskBox>
                       <AskLabel>판매 희망가</AskLabel>
-                      <AskValue>{price} 원</AskValue>
+                      <AskValue>{Number(price).toLocaleString()} 원</AskValue>
                     </AskBox>
                   )}
                 </PreviewCard>
@@ -142,7 +142,7 @@ export function ListTicketScreen() {
                       <RowDate>{t.event_date}</RowDate>
                     </RowMain>
                     <TokenId>#{t.token_id}</TokenId>
-                    <OriginalPrice>{t.original_price}</OriginalPrice>
+                    <OriginalPrice>{Number(t.original_price).toLocaleString()}</OriginalPrice>
                     <SelectHint>선택 →</SelectHint>
                   </TicketRow>
                 ))}

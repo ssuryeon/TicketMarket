@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Navbar } from '../components/Navbar';
 import { Button, Card, Page, PageSubtitle, PageTitle } from '../components/ui';
+import { TransferBtn } from './MyTicketsScreen';
 import { marketFilters} from '../data/mock';
-import { getMarketList } from '../utils/market';
+import { getMarketList, cancelMarket } from '../utils/market';
 import { userStore } from '../stores/userStore';
 import { useNavigate } from 'react-router-dom';
 import { buyMarket } from '../utils/market';
@@ -25,13 +26,21 @@ export function MarketScreen() {
   const [activeFilter, setActiveFilter] = useState('all');
   const [marketTicket, setMarketTicket] = useState<ISaleTicket[]>([]);
   const token = userStore((state) => state.token);
+  const myNickname = userStore((state) => state.nickname);
   const navigate = useNavigate();
+
   const onClick = async (listingId:string) => {
     const res = await buyMarket(listingId, token);
     console.log(res);
     alert(res.message);
     if(res.ok) navigate('/tickets');
   }
+  const onCancelClick = async (listingId:string, token:string) => {
+    const res = await cancelMarket(listingId, token);
+    console.log(res);
+    if(!res.ok) alert('취소 오류 발생');
+  }
+
   useEffect(() => {
     const getTickets = async () => {
       const res = await getMarketList(token);
@@ -73,10 +82,10 @@ export function MarketScreen() {
             <Line />
             <AskLabel>판매 희망가</AskLabel>
             <AskRow>
-              <Ask>{listing.price}</Ask>
-              <BuyBtn $variant="primary" onClick={() => onClick(listing.id)}>바로 구매</BuyBtn>
+              <Ask>{Number(listing.price).toLocaleString()}</Ask>
+              {listing.seller_nickname == myNickname ? <TransferBtn onClick={() => onCancelClick(listing.id, token)}>양도 취소</TransferBtn> : <BuyBtn $variant="primary" onClick={() => onClick(listing.id)}>바로 구매</BuyBtn>}
             </AskRow>
-            <Original>{listing.original_price}</Original>
+            <Original>원가 {Number(listing.original_price).toLocaleString()}</Original>
           </Listing>
         ))}
       </Grid>
@@ -148,7 +157,7 @@ const Line = styled.hr`
 
 const AskLabel = styled.div`
   font-size: 12px;
-  color: ${({ theme }) => theme.color.mutedLight};
+  color: ${({ theme }) => theme.color.ink};
 `;
 
 const AskRow = styled.div`

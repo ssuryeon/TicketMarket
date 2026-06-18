@@ -42,7 +42,7 @@ export function EventListScreen() {
               <FloorLabel>최저가</FloorLabel>
               <PriceRow>
                 <Price>
-                  {ev.original_price} <Won>₩</Won>
+                  {Number(ev.original_price).toLocaleString()} <Won>₩</Won>
                 </Price>
                 <Left>{ev.total_seats}</Left>
               </PriceRow>

@@ -5,7 +5,7 @@ import { Badge, Card, Button } from '../components/ui';
 import {Field, Label, Input} from './SignUpScreen';
 import { ticketTabs} from '../data/mock';
 import { me, registerAccount } from '../utils/auth';
-import { getMyTicketList } from '../utils/ticket';
+import { getMyTicketList, cancelTicket } from '../utils/ticket';
 import { userStore } from '../stores/userStore';
 
 interface IUser {
@@ -77,6 +77,12 @@ export function MyTicketsScreen() {
     getTicketList();
   }, [token])
 
+  const onCancelClick = async (ticketId:string) => {
+    const res = await cancelTicket(ticketId, token);
+    console.log(res);
+    alert(res.message);
+  }
+
   return (
     <>
       <Navbar />
@@ -132,7 +138,8 @@ export function MyTicketsScreen() {
                 </RowMain>
                 <TokenId>{t.token_id}</TokenId>
                 <Badge $tone="green">{t.status}</Badge>
-                <Value>{t.original_price}</Value>
+                <Value>{Number(t.original_price).toLocaleString()}</Value>
+                <TransferBtn onClick={() => onCancelClick(t.id)}>티켓 취소</TransferBtn>
               </TicketRow>
             ))}
           </List>
@@ -358,15 +365,15 @@ const BankForm = styled.form`
   max-width: 480px;
 `;
 
-// const TransferBtn = styled.button`
-//   height: 34px;
-//   padding: 0 18px;
-//   border-radius: ${({ theme }) => theme.radius.sm};
-//   background: ${({ theme }) => theme.color.card};
-//   border: 1px solid ${({ theme }) => theme.color.border};
-//   font-size: 12px;
-//   font-weight: 600;
-//   color: ${({ theme }) => theme.color.ink};
+export const TransferBtn = styled.button`
+  height: 34px;
+  padding: 0 18px;
+  border-radius: ${({ theme }) => theme.radius.sm};
+  background: ${({ theme }) => theme.color.card};
+  border: 1px solid ${({ theme }) => theme.color.border};
+  font-size: 12px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.color.ink};
 
-//   &:hover { border-color: ${({ theme }) => theme.color.mutedLight}; }
-// `;
+  &:hover { border-color: ${({ theme }) => theme.color.mutedLight}; }
+`;

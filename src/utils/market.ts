@@ -46,12 +46,14 @@ export const buyMarket = async (listingId:string, token:string) => {
     return res;
 }
 
-export const cancelMarket = async (listingId:string) => {
+export const cancelMarket = async (listingId:string, token:string) => {
     console.log('cancelMarket start');
     const res = await (await fetch(`${BASE_URL}/market/cancel/${listingId}`, {
         method: 'POST',
         headers: {
             'Content-type': 'Application/json',
+            'ngrok-skip-browser-warning': 'true',
+            'Authorization': `Bearer ${token}`,
         },
     })).json();
     console.log(res);

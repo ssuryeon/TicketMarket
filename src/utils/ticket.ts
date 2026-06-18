@@ -59,12 +59,14 @@ export const enterQR = async (qrData:string) => {
     return res;
 }
 
-export const cancelTicket = async (ticketId:string) => {
+export const cancelTicket = async (ticketId:string, token:string) => {
     console.log(`cancelTicket start: ${ticketId}`)
     const res = await (await fetch(`${BASE_URL}/ticket/cancel/${ticketId}`, {
         method: 'POST',
         headers: {
             'Content-type': 'application/json',
+            'ngrok-skip-browser-warning': 'true',
+            'Authorization': `Bearer ${token}`,
         },
     })).json();
     console.log(res);
