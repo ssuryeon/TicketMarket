@@ -80,3 +80,17 @@ export const withdrawAccount = async () => {
     console.log(res);
     return res;
 }
+
+export const getRank = async (token:string) => {
+    console.log(`getRank start: ${token}`);
+    const res = await (await fetch(`${BASE_URL}/fan-nft/me`, {
+        method: 'GET',
+        headers: {
+            'Content-type': 'application/json',
+            'ngrok-skip-browser-warning': 'true',
+            'Authorization': `Bearer ${token}`,
+        }
+    })).json();
+    console.log(res);
+    return res;
+}

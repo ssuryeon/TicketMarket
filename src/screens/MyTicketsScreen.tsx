@@ -4,7 +4,7 @@ import { Navbar } from '../components/Navbar';
 import { Badge, Card, Button } from '../components/ui';
 import {Field, Label, Input} from './SignUpScreen';
 import { ticketTabs} from '../data/mock';
-import { me, registerAccount } from '../utils/auth';
+import { me, registerAccount, getRank } from '../utils/auth';
 import { getMyTicketList, cancelTicket } from '../utils/ticket';
 import { userStore } from '../stores/userStore';
 
@@ -27,6 +27,16 @@ interface IBank {
   bank_holder: string,
 }
 
+interface IRankInfo {
+  artist_address: string,
+  artist_name: string,
+  attendance_count: number,
+  next_tier_at: number,
+  remaining: number,
+  tier: string,
+  token_id: string,
+}
+
 interface ITicket {
   id: string;
   token_id: number;
@@ -41,18 +51,20 @@ interface ITicket {
 }
 
 const BADGE_TIERS = [
-  { name: '브론즈', requirement: '1회 이상', color1: '#B87333', color2: '#CD7F32', shimmer: '#E8A87C', textColor: '#6B3A1F' },
-  { name: '실버', requirement: '3회 이상', color1: '#9E9E9E', color2: '#C8C8C8', shimmer: '#E8E8E8', textColor: '#3A3A3A' },
-  { name: '골드', requirement: '7회 이상', color1: '#C8960C', color2: '#F0C040', shimmer: '#FFE680', textColor: '#6B4800' },
-  { name: '플래티넘', requirement: '15회 이상', color1: '#5E8DA0', color2: '#8BBCCC', shimmer: '#C0DCE8', textColor: '#1A3A4A' },
-  { name: '다이아몬드', requirement: '25회 이상', color1: '#3A7DC4', color2: '#70B0E0', shimmer: '#B8DCF8', textColor: '#0A2A50' },
+  { name: 'BRONZE', label: '브론즈', requirement: '1회 이상', color1: '#B87333', color2: '#CD7F32', shimmer: '#E8A87C', textColor: '#6B3A1F' },
+  { name: 'SILVER', label: '실버', requirement: '3회 이상', color1: '#9E9E9E', color2: '#C8C8C8', shimmer: '#E8E8E8', textColor: '#3A3A3A' },
+  { name: 'GOLD', label: '골드', requirement: '7회 이상', color1: '#C8960C', color2: '#F0C040', shimmer: '#FFE680', textColor: '#6B4800' },
+  { name: 'PLATINUM', label: '플래티넘', requirement: '15회 이상', color1: '#5E8DA0', color2: '#8BBCCC', shimmer: '#C0DCE8', textColor: '#1A3A4A' },
+  { name: 'DIAMOND', label: '다이아몬드', requirement: '25회 이상', color1: '#3A7DC4', color2: '#70B0E0', shimmer: '#B8DCF8', textColor: '#0A2A50' },
 ];
+
 
 export function MyTicketsScreen() {
   const [activeTab, setActiveTab] = useState(0);
   const [user, setUser] = useState<IUser | null>(null);
   const [bank, setBank] = useState<IBank | null>(null);
   const [myTickets, setMyTickets] = useState<ITicket[]>([]);
+  const [rankInfo, setRankInfo] = useState<IRankInfo[]>([]);
   const token = userStore((state) => state.token);
   const onSubmit = async (e:React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -70,8 +82,11 @@ export function MyTicketsScreen() {
     if (!token) return;
     const getInfo = async () => {
       const res = await me(token);
+      const info_rank = await getRank(token);
       console.log(res);
+      console.log(info_rank);
       setUser(res);
+      setRankInfo(Array.isArray(info_rank?.badges) ? info_rank.badges : []);
       if (res.bank_name) {
         setBank({bank_name: res.bank_name, bank_account: res.bank_account, bank_holder: res.bank_holder});
       }
@@ -190,25 +205,72 @@ export function MyTicketsScreen() {
           ) : 
           (
             activeTab == 2 ? (
-              <BadgeGuideSection>
-                <BadgeGuideHeader>
-                  <BadgeGuideTitle>활동 뱃지</BadgeGuideTitle>
-                  <BadgeGuideDesc>티켓 구매 횟수에 따라 뱃지를 획득할 수 있어요</BadgeGuideDesc>
-                </BadgeGuideHeader>
-                <BadgeGrid>
-                  {BADGE_TIERS.map((tier) => (
-                    <BadgeCard key={tier.name}>
-                      <BadgeIconWrap $color1={tier.color1} $color2={tier.color2} $shimmer={tier.shimmer}>
-                        <BadgeInner>
-                          <BadgeGem $color1={tier.color1} $shimmer={tier.shimmer} />
-                        </BadgeInner>
-                      </BadgeIconWrap>
-                      <BadgeTierName>{tier.name}</BadgeTierName>
-                      <BadgeTierReq $textColor={tier.color1}>{tier.requirement}</BadgeTierReq>
-                    </BadgeCard>
-                  ))}
-                </BadgeGrid>
-              </BadgeGuideSection>
+              <>
+                <BadgeGuideSection>
+                  <BadgeGuideHeader>
+                    <BadgeGuideTitle>활동 뱃지</BadgeGuideTitle>
+                    <BadgeGuideDesc>티켓 구매 횟수에 따라 뱃지를 획득할 수 있어요</BadgeGuideDesc>
+                  </BadgeGuideHeader>
+                  <BadgeGrid>
+                    {BADGE_TIERS.map((tier) => (
+                      <BadgeCard key={tier.name}>
+                        <BadgeIconWrap $color1={tier.color1} $color2={tier.color2} $shimmer={tier.shimmer}>
+                          <BadgeInner>
+                            <BadgeGem $color1={tier.color1} $shimmer={tier.shimmer} />
+                          </BadgeInner>
+                        </BadgeIconWrap>
+                        <BadgeTierName>{tier.label}</BadgeTierName>
+                        <BadgeTierReq $textColor={tier.color1}>{tier.requirement}</BadgeTierReq>
+                      </BadgeCard>
+                    ))}
+                  </BadgeGrid>
+                </BadgeGuideSection>
+
+                {rankInfo.length > 0 && (
+                  <MyBadgeSection>
+                    <BadgeGuideHeader>
+                      <BadgeGuideTitle>내 뱃지</BadgeGuideTitle>
+                      <BadgeGuideDesc>관람한 공연별 뱃지 현황이에요</BadgeGuideDesc>
+                    </BadgeGuideHeader>
+                    <MyBadgeList>
+                      {rankInfo.map((rank, i) => {
+                        const tierIdx = BADGE_TIERS.findIndex(t => t.name === rank.tier);
+                        const tier = BADGE_TIERS[Math.max(0, tierIdx)];
+                        const isMaxTier = !rank.next_tier_at || tierIdx === BADGE_TIERS.length - 1;
+                        const progress = isMaxTier
+                          ? 100
+                          : Math.min(100, (rank.attendance_count / rank.next_tier_at) * 100);
+                        return (
+                          <MyBadgeCard key={i}>
+                            <BadgeIconWrap $color1={tier.color1} $color2={tier.color2} $shimmer={tier.shimmer}>
+                              <BadgeInner>
+                                <BadgeGem $color1={tier.color1} $shimmer={tier.shimmer} />
+                              </BadgeInner>
+                            </BadgeIconWrap>
+                            <MyBadgeInfo>
+                              <MyBadgeArtist>{rank.artist_name}</MyBadgeArtist>
+                              <MyBadgeTierRow>
+                                <BadgeTierReq $textColor={tier.color1}>{tier.label}</BadgeTierReq>
+                                {!isMaxTier && (
+                                  <MyBadgeRemaining>다음 등급까지 {rank.remaining}회 남음</MyBadgeRemaining>
+                                )}
+                                {isMaxTier && <MyBadgeRemaining>최고 등급 달성!</MyBadgeRemaining>}
+                              </MyBadgeTierRow>
+                              <ProgressBarWrap>
+                                <ProgressFill $percent={progress} $color={tier.color2} />
+                              </ProgressBarWrap>
+                              <ProgressLabel>
+                                <span>{rank.attendance_count}회 관람</span>
+                                {!isMaxTier && <span>{rank.next_tier_at}회</span>}
+                              </ProgressLabel>
+                            </MyBadgeInfo>
+                          </MyBadgeCard>
+                        );
+                      })}
+                    </MyBadgeList>
+                  </MyBadgeSection>
+                )}
+              </>
             ) : null
           )   
         )
@@ -484,6 +546,71 @@ const BadgeTierReq = styled.div<{ $textColor: string }>`
   background: ${({ $textColor }) => $textColor}18;
   padding: 3px 10px;
   border-radius: 20px;
+`;
+
+const MyBadgeSection = styled.div`
+  width: 100%;
+  margin-top: 48px;
+`;
+
+const MyBadgeList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+const MyBadgeCard = styled(Card)`
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px 28px;
+`;
+
+const MyBadgeInfo = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const MyBadgeArtist = styled.div`
+  font-size: 15px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.color.ink};
+`;
+
+const MyBadgeTierRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
+const MyBadgeRemaining = styled.div`
+  font-size: 12px;
+  color: ${({ theme }) => theme.color.muted};
+`;
+
+const ProgressBarWrap = styled.div`
+  width: 100%;
+  height: 6px;
+  border-radius: 99px;
+  background: ${({ theme }) => theme.color.border};
+  overflow: hidden;
+`;
+
+const ProgressFill = styled.div<{ $percent: number; $color: string }>`
+  height: 100%;
+  width: ${({ $percent }) => $percent}%;
+  border-radius: 99px;
+  background: ${({ $color }) => $color};
+  transition: width 0.4s ease;
+`;
+
+const ProgressLabel = styled.div`
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: ${({ theme }) => theme.color.muted};
 `;
 
 export const TransferBtn = styled.button`
