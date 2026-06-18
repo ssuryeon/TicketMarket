@@ -7,7 +7,7 @@ import { signUp } from '../utils/auth';
 import LoginModal from '../components/LoginModal';
 import { loginModalStore } from '../stores/loginModalStore';
 import { userStore } from '../stores/userStore';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 export function SignUpScreen() {
   const [email, setEmail] = useState('');

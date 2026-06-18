@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { Navbar } from '../components/Navbar';
 import { Badge, Card, Button } from '../components/ui';
 import {Field, Label, Input} from './SignUpScreen';
-import { ticketTabs, walletProfile } from '../data/mock';
+import { ticketTabs} from '../data/mock';
 import { me, registerAccount } from '../utils/auth';
 import { getMyTicketList } from '../utils/ticket';
 import { userStore } from '../stores/userStore';
@@ -255,11 +255,11 @@ const StatLabel = styled.div`
   color: ${({ theme }) => theme.color.muted};
 `;
 
-const StatDivider = styled.span`
-  width: 1px;
-  height: 44px;
-  background: ${({ theme }) => theme.color.border};
-`;
+// const StatDivider = styled.span`
+//   width: 1px;
+//   height: 44px;
+//   background: ${({ theme }) => theme.color.border};
+// `;
 
 const Tabs = styled.div`
   display: flex;
@@ -358,15 +358,15 @@ const BankForm = styled.form`
   max-width: 480px;
 `;
 
-const TransferBtn = styled.button`
-  height: 34px;
-  padding: 0 18px;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  background: ${({ theme }) => theme.color.card};
-  border: 1px solid ${({ theme }) => theme.color.border};
-  font-size: 12px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.color.ink};
+// const TransferBtn = styled.button`
+//   height: 34px;
+//   padding: 0 18px;
+//   border-radius: ${({ theme }) => theme.radius.sm};
+//   background: ${({ theme }) => theme.color.card};
+//   border: 1px solid ${({ theme }) => theme.color.border};
+//   font-size: 12px;
+//   font-weight: 600;
+//   color: ${({ theme }) => theme.color.ink};
 
-  &:hover { border-color: ${({ theme }) => theme.color.mutedLight}; }
-`;
+//   &:hover { border-color: ${({ theme }) => theme.color.mutedLight}; }
+// `;

@@ -195,10 +195,10 @@ const Page = styled.main`
   }
 `;
 
-const Breadcrumb = styled.div`
-  font-size: 13px;
-  color: ${({ theme }) => theme.color.mutedLight};
-`;
+// const Breadcrumb = styled.div`
+//   font-size: 13px;
+//   color: ${({ theme }) => theme.color.mutedLight};
+// `;
 
 const Title = styled.h1`
   margin: 16px 0 0;
@@ -265,14 +265,14 @@ const SectionName = styled.div`
   color: ${({ theme }) => theme.color.ink};
 `;
 
-const RareTag = styled.span`
-  padding: 2px 8px;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  background: ${({ theme }) => theme.color.accentSoft};
-  color: ${({ theme }) => theme.color.accent};
-  font-size: 10px;
-  font-weight: 600;
-`;
+// const RareTag = styled.span`
+//   padding: 2px 8px;
+//   border-radius: ${({ theme }) => theme.radius.sm};
+//   background: ${({ theme }) => theme.color.accentSoft};
+//   color: ${({ theme }) => theme.color.accent};
+//   font-size: 10px;
+//   font-weight: 600;
+// `;
 
 const SectionPrice = styled.div`
   font-size: 22px;
