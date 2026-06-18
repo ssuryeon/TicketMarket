@@ -40,6 +40,14 @@ interface ITicket {
   created_at: string;
 }
 
+const BADGE_TIERS = [
+  { name: '브론즈', requirement: '1회 이상', color1: '#B87333', color2: '#CD7F32', shimmer: '#E8A87C', textColor: '#6B3A1F' },
+  { name: '실버', requirement: '3회 이상', color1: '#9E9E9E', color2: '#C8C8C8', shimmer: '#E8E8E8', textColor: '#3A3A3A' },
+  { name: '골드', requirement: '7회 이상', color1: '#C8960C', color2: '#F0C040', shimmer: '#FFE680', textColor: '#6B4800' },
+  { name: '플래티넘', requirement: '15회 이상', color1: '#5E8DA0', color2: '#8BBCCC', shimmer: '#C0DCE8', textColor: '#1A3A4A' },
+  { name: '다이아몬드', requirement: '25회 이상', color1: '#3A7DC4', color2: '#70B0E0', shimmer: '#B8DCF8', textColor: '#0A2A50' },
+];
+
 export function MyTicketsScreen() {
   const [activeTab, setActiveTab] = useState(0);
   const [user, setUser] = useState<IUser | null>(null);
@@ -181,7 +189,27 @@ export function MyTicketsScreen() {
             </div>
           ) : 
           (
-            null
+            activeTab == 2 ? (
+              <BadgeGuideSection>
+                <BadgeGuideHeader>
+                  <BadgeGuideTitle>활동 뱃지</BadgeGuideTitle>
+                  <BadgeGuideDesc>티켓 구매 횟수에 따라 뱃지를 획득할 수 있어요</BadgeGuideDesc>
+                </BadgeGuideHeader>
+                <BadgeGrid>
+                  {BADGE_TIERS.map((tier) => (
+                    <BadgeCard key={tier.name}>
+                      <BadgeIconWrap $color1={tier.color1} $color2={tier.color2} $shimmer={tier.shimmer}>
+                        <BadgeInner>
+                          <BadgeGem $color1={tier.color1} $shimmer={tier.shimmer} />
+                        </BadgeInner>
+                      </BadgeIconWrap>
+                      <BadgeTierName>{tier.name}</BadgeTierName>
+                      <BadgeTierReq $textColor={tier.color1}>{tier.requirement}</BadgeTierReq>
+                    </BadgeCard>
+                  ))}
+                </BadgeGrid>
+              </BadgeGuideSection>
+            ) : null
           )   
         )
       }
@@ -366,6 +394,96 @@ const BankForm = styled.form`
   gap: 16px;
   width: 100%;
   max-width: 480px;
+`;
+
+const BadgeGuideSection = styled.div`
+  width: 100%;
+`;
+
+const BadgeGuideHeader = styled.div`
+  margin-bottom: 28px;
+`;
+
+const BadgeGuideTitle = styled.h2`
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.color.ink};
+`;
+
+const BadgeGuideDesc = styled.p`
+  margin: 0;
+  font-size: 13px;
+  color: ${({ theme }) => theme.color.muted};
+`;
+
+const BadgeGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+`;
+
+const BadgeCard = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 28px 16px 24px;
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme }) => theme.color.card};
+  border: 1px solid ${({ theme }) => theme.color.border};
+`;
+
+const BadgeIconWrap = styled.div<{ $color1: string; $color2: string; $shimmer: string }>`
+  position: relative;
+  width: 64px;
+  height: 72px;
+  background: linear-gradient(160deg, ${({ $shimmer }) => $shimmer} 0%, ${({ $color2 }) => $color2} 40%, ${({ $color1 }) => $color1} 100%);
+  clip-path: polygon(50% 0%, 100% 18%, 100% 68%, 50% 100%, 0% 68%, 0% 18%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 4px 8px ${({ $color1 }) => $color1}66);
+`;
+
+const BadgeInner = styled.div`
+  width: 44px;
+  height: 50px;
+  clip-path: polygon(50% 0%, 100% 18%, 100% 68%, 50% 100%, 0% 68%, 0% 18%);
+  background: rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const BadgeGem = styled.div<{ $color1: string; $shimmer: string }>`
+  width: 18px;
+  height: 18px;
+  background: linear-gradient(135deg, #ffffff 0%, ${({ $shimmer }) => $shimmer} 50%, ${({ $color1 }) => $color1} 100%);
+  clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+`;
+
+const BadgeTierName = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.color.ink};
+`;
+
+const BadgeTierReq = styled.div<{ $textColor: string }>`
+  font-size: 12px;
+  font-weight: 500;
+  color: ${({ $textColor }) => $textColor};
+  background: ${({ $textColor }) => $textColor}18;
+  padding: 3px 10px;
+  border-radius: 20px;
 `;
 
 export const TransferBtn = styled.button`
