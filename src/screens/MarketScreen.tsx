@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Navbar } from '../components/Navbar';
-import { Badge, Button, Card, Page, PageSubtitle, PageTitle } from '../components/ui';
-import { marketFilters, marketListings } from '../data/mock';
+import { Button, Card, Page, PageSubtitle, PageTitle } from '../components/ui';
+import { marketFilters} from '../data/mock';
 import { getMarketList } from '../utils/market';
 import { userStore } from '../stores/userStore';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { buyMarket } from '../utils/market';
 
 interface ISaleTicket {
   id: string;
@@ -25,6 +26,12 @@ export function MarketScreen() {
   const [marketTicket, setMarketTicket] = useState<ISaleTicket[]>([]);
   const token = userStore((state) => state.token);
   const navigate = useNavigate();
+  const onClick = async (listingId:string) => {
+    const res = await buyMarket(listingId, token);
+    console.log(res);
+    alert(res.message);
+    if(res.ok) navigate('/tickets');
+  }
   useEffect(() => {
     const getTickets = async () => {
       const res = await getMarketList(token);
@@ -67,7 +74,7 @@ export function MarketScreen() {
             <AskLabel>판매 희망가</AskLabel>
             <AskRow>
               <Ask>{listing.price}</Ask>
-              <BuyBtn $variant="primary">바로 구매</BuyBtn>
+              <BuyBtn $variant="primary" onClick={() => onClick(listing.id)}>바로 구매</BuyBtn>
             </AskRow>
             <Original>{listing.original_price}</Original>
           </Listing>

@@ -7,6 +7,7 @@ import { signUp } from '../utils/auth';
 import LoginModal from '../components/LoginModal';
 import { loginModalStore } from '../stores/loginModalStore';
 import { userStore } from '../stores/userStore';
+import { Navigate, useNavigate } from 'react-router-dom';
 
 export function SignUpScreen() {
   const [email, setEmail] = useState('');
@@ -15,6 +16,7 @@ export function SignUpScreen() {
   const isClicked = loginModalStore((state) => state.isClicked);
   const setIsClicked = loginModalStore((state) => state.setIsClicked);
   const storeUserInfo = userStore((state) => state.signUp);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -25,7 +27,8 @@ export function SignUpScreen() {
     const res = await signUp(email, password, nickname);
     console.log(res);
     storeUserInfo(res.email, res.nickname, res.token, res.wallet_address);
-    console.log('회원 정보 저장 완료')
+    console.log('회원 정보 저장 완료');
+    navigate('/events')
   };
 
   return (
