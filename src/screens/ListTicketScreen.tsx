@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { Navbar } from '../components/Navbar';
 import { Button, Card, Eyebrow } from '../components/ui';
@@ -25,6 +26,7 @@ export function ListTicketScreen() {
   const [price, setPrice] = useState('');
   const [loading, setLoading] = useState(true);
   const token = userStore((state) => state.token);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -47,7 +49,10 @@ export function ListTicketScreen() {
     if (!selectedTicket || !price) return;
     const res = await registerMarket(selectedTicket.token_id, parseFloat(price), token);
     console.log(res);
-    if(res.ok) alert('마켓에 티켓이 등록되었습니다.');
+    if(res.ok) {
+      alert('마켓에 티켓이 등록되었습니다.');
+      navigate('/market');
+    };
     setSelectedTicket(null);
     setPrice('');
   };

@@ -81,6 +81,9 @@ export function MyTicketsScreen() {
     const res = await cancelTicket(ticketId, token);
     console.log(res);
     alert(res.message);
+    if (res.message) {
+      setMyTickets(prev => prev.filter(t => t.id !== ticketId));
+    }
   }
 
   return (

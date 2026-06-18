@@ -39,6 +39,10 @@ export function MarketScreen() {
     const res = await cancelMarket(listingId, token);
     console.log(res);
     if(!res.ok) alert('취소 오류 발생');
+    alert('양도가 취소되었습니다.');
+    const tickets = await getMarketList(token);
+    console.log(tickets);
+    setMarketTicket(tickets);
   }
 
   useEffect(() => {
